@@ -1,11 +1,11 @@
 resource "aws_key_pair" "mykey" {
-    key_name = "terraform-ansible-key1"
+    key_name = "terraform-ansible-key2"
     #public_key = file("C:/Users/username/.ssh/id_rsa.pub")
     public_key = file("~/.ssh/id_rsa.pub")
 }
 
 resource "aws_security_group" "ssh-allow" {
-    name = "allow-ssh-ansible"
+    name = "allow-ssh-ansible-2"
     description = "Allow only ssh port"
     ingress {
         from_port = 22
@@ -22,7 +22,7 @@ resource "aws_security_group" "ssh-allow" {
 }
 
 resource "aws_security_group" "http-allow" {
-    name = "allow-http-ansible"
+    name = "allow-http-ansible-2"
     description = "Allow only http port"
     ingress {
         from_port = 80
@@ -39,7 +39,7 @@ resource "aws_security_group" "http-allow" {
 }
 
 resource "aws_security_group" "reactjs-allow" {
-    name = "allow-reactjs"
+    name = "allow-reactjs-2"
     description = "Allow only reactjs port"
     ingress {
         from_port = 30000
@@ -56,7 +56,7 @@ resource "aws_security_group" "reactjs-allow" {
 }
 
 resource "aws_security_group" "spring-allow" {
-    name = "allow-spring"
+    name = "allow-spring-2"
     description = "Allow only spring port"
     ingress {
         from_port = 30081
@@ -73,7 +73,7 @@ resource "aws_security_group" "spring-allow" {
 }
 
 resource "aws_security_group" "mysql-allow" {
-    name = "allow-mysql"
+    name = "allow-mysql-2"
     description = "Allow only mysql port"
     ingress {
         from_port = 3306
@@ -98,7 +98,7 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-resource "aws_instance" "servers" {
+resource "aws_instance" "server" {
     ami = data.aws_ami.amazon_linux.id
     instance_type = "m7i-flex.large"
     key_name = aws_key_pair.mykey.key_name
@@ -114,16 +114,8 @@ resource "aws_instance" "servers" {
                 type     = "ssh"
                 user     = "ec2-user"
                 private_key = file("~/.ssh/id_rsa")
-                host = aws_instance.servers.public_ip
+                host = aws_instance.server.public_ip
         }
-        provisioner "file" {
-    		source      = "code"
-		destination = "/home/ec2-user/code"
-  	}
-        #provisioner "file" {
-    	#	source      = "docker-compose.yaml"
-	#	destination = "/home/ec2-user/docker-compose.yaml"
-  	#}
 
 	provisioner "remote-exec" {
     		inline = [
@@ -151,21 +143,22 @@ resource "aws_instance" "servers" {
 			"git clone https://github.com/lavatech321/Kubernetes-Application-Deployment.git",
 			"sed -i 's/REPLACE-IP/${self.public_ip}/g' Kubernetes-Application-Deployment/deployment/todo-app-deploy.yaml",
 			"kubectl create -f Kubernetes-Application-Deployment/deployment/todo-app-deploy.yaml",
-			"kubectl port-forward service/frontend 30000:3000 --address 0.0.0.0 &",
-			"kubectl port-forward service/backend 30081:7081 --address 0.0.0.0 &",
+			"sleep 60",
+			#"kubectl port-forward service/frontend 30000:3000 --address 0.0.0.0 &",
+			#"kubectl port-forward service/backend 30081:7081 --address 0.0.0.0 &",
    		 ]
   	}
 }
 
 output "public_ip" {
-	value = "Public IP address: ec2-user@${aws_instance.servers.public_ip}\n"
+	value = "Public IP address: ec2-user@${aws_instance.server.public_ip}\n"
 }
 
-output "sshkey" {
-	value = "SSH Key location: ~/.ssh/id_rsa \n"
+output "Access-details" {
+	value = "ssh -i ~/.ssh/id_rsa ec2-user@${aws_instance.server.public_ip}  \n"
 }
 
-output "Kubernetes Application Deployment" {
+output "Kubernetes-Application-Deployment" {
 	value = "Application pod server: kubectl get pods \n"
 }
 
@@ -173,6 +166,10 @@ output "MYsql-Live" {
 	value = "MySQL Credentails: mysql -uappuser -papppass appdb \n"
 }
 
+output "Export-port-to-access-the-application" {
+	value = " kubectl port-forward service/frontend 30000:3000 --address 0.0.0.0 & \n kubectl port-forward service/backend 30081:7081 --address 0.0.0.0 & \n"
+}
+
 output "App-Live" {
-	value = "Reactjs and Spring boot Live: http://${aws_instance.servers.public_ip}:30000 \n"
+	value = "Reactjs and Spring boot Live: http://${aws_instance.server.public_ip}:30000 \n"
 }
