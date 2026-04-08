@@ -1,0 +1,168 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: appdb
+            - name: MYSQL_USER
+              value: appuser
+            - name: MYSQL_PASSWORD
+              value: apppass
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  type: NodePort
+  ports:
+    - port: 7081
+      targetPort: 7081
+      nodePort: 30081
+  selector:
+    app: backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      volumes:
+        - name: app-code
+          emptyDir: {}
+
+      initContainers:
+        - name: git-clone
+          image: alpine/git
+          command:
+            - sh
+            - -c
+            - |
+              git clone https://github.com/lavatech321/code-test.git /app &&
+              cp /app/*.jar /work/backend.jar
+          volumeMounts:
+            - name: app-code
+              mountPath: /work
+
+      containers:
+        - name: backend
+          image: eclipse-temurin:17-jre
+          ports:
+            - containerPort: 7081
+          volumeMounts:
+            - name: app-code
+              mountPath: /app
+          command: ["java", "-jar", "/app/backend.jar"]
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/appdb
+            - name: SPRING_DATASOURCE_USERNAME
+              value: appuser
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: apppass
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000
+  selector:
+    app: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      volumes:
+        - name: frontend-code
+          emptyDir: {}
+
+      initContainers:
+        - name: git-clone
+          image: alpine/git
+          command:
+            - sh
+            - -c
+            - |
+              git clone https://github.com/lavatech321/code-test.git /app &&
+              cp -r /app/Frontend_todo/* /work/
+          volumeMounts:
+            - name: frontend-code
+              mountPath: /work
+
+      containers:
+        - name: frontend
+          image: node:18-alpine
+          workingDir: /app
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: frontend-code
+              mountPath: /app
+          env:
+            - name: CHOKIDAR_USEPOLLING
+              value: "true"
+            - name: REACT_APP_API_URL
+              value: http://54.187.124.128:30081
+          command: ["sh", "-c", "npm install && npm start"]
