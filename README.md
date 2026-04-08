@@ -109,7 +109,7 @@ terraform apply --auto-approve
 
 ---
 
-# ☁️ Terraform Outputs
+### Terraform Outputs
 
 After successful deployment, you will get:
 
@@ -137,7 +137,7 @@ output "App-Live" {
 
 ---
 
-# Access EC2 Instance
+## Step 5: Access EC2 Instance
 
 ```bash
 ssh ec2-user@<PUBLIC_IP>
@@ -145,7 +145,7 @@ ssh ec2-user@<PUBLIC_IP>
 
 ---
 
-# Enable Application Access (IMPORTANT)
+## Step 6: Enable Application Access (IMPORTANT)
 
 Since Minikube runs inside Docker, you must enable port forwarding:
 
@@ -168,6 +168,7 @@ http://<EC2_PUBLIC_IP>:30000
 
 # MySQL Access
 
+Take access of mysql pod and execute below command:
 ```bash
 mysql -uappuser -papppass appdb
 ```
@@ -185,7 +186,7 @@ mysql -uappuser -papppass appdb
 
 ---
 
-# ⚠️ Notes
+# Notes
 
 * Port forwarding is required due to Minikube Docker driver networking
 * This setup is ideal for **learning, demos, and DevOps practice**
