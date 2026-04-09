@@ -71,6 +71,9 @@ This project demonstrates a complete **end-to-end deployment of a full-stack app
 
 ```bash
 git clone https://github.com/lavatech321/Kubernetes-Application-Deployment.git
+
+# Substitute access key id and secret key id inside terraform.tfvars
+
 cd Kubernetes-Application-Deployment
 ```
 
